@@ -149,37 +149,6 @@ st.markdown(
         padding: 15px 17px;
         margin-bottom: 10px;
     }
-    .gap-chart {
-        width: 100%;
-        margin: 12px 0 20px 0;
-    }
-    .gap-row {
-        display: grid;
-        grid-template-columns: minmax(150px, 220px) 1fr 42px;
-        gap: 12px;
-        align-items: center;
-        margin: 10px 0;
-    }
-    .gap-label {
-        font-size: .92rem;
-        font-weight: 650;
-    }
-    .gap-track {
-        height: 22px;
-        border-radius: 999px;
-        background: rgba(128,128,128,.14);
-        overflow: hidden;
-    }
-    .gap-fill {
-        height: 100%;
-        border-radius: 999px;
-        background: currentColor;
-        opacity: .72;
-    }
-    .gap-value {
-        text-align: right;
-        font-weight: 700;
-    }
     @media (max-width: 900px) {
         .block-container {
             padding-left: 1rem;
@@ -190,13 +159,6 @@ st.markdown(
         }
         .hero h1 {
             font-size: 1.55rem;
-        }
-        .gap-row {
-            grid-template-columns: 1fr;
-            gap: 5px;
-        }
-        .gap-value {
-            text-align: left;
         }
     }
     </style>
@@ -645,28 +607,20 @@ if run:
         m2.metric("Partially Matched", partial)
         m3.metric("Missing / Low Alignment", missing)
 
-        # Pure HTML/CSS chart (does not depend on Altair).
-        # This is more robust on Streamlit Cloud / newer Python runtimes.
+        # Stable Streamlit-native gap visualization (no Altair, no custom HTML).
         max_count = max(fully, partial, missing, 1)
-        chart_items = [
-            ("Fully Matched", fully),
-            ("Partially Matched", partial),
-            ("Missing / Low Alignment", missing),
-        ]
-        chart_html = '<div class="gap-chart">'
-        for label, value in chart_items:
-            width = max(2, int((value / max_count) * 100)) if value > 0 else 0
-            chart_html += f"""
-            <div class="gap-row">
-                <div class="gap-label">{label}</div>
-                <div class="gap-track">
-                    <div class="gap-fill" style="width:{width}%"></div>
-                </div>
-                <div class="gap-value">{value}</div>
-            </div>
-            """
-        chart_html += '</div>'
-        st.markdown(chart_html, unsafe_allow_html=True)
+
+        st.write("**Fully Matched**")
+        st.progress(fully / max_count)
+        st.caption(f"{fully} skill(s)")
+
+        st.write("**Partially Matched**")
+        st.progress(partial / max_count)
+        st.caption(f"{partial} skill(s)")
+
+        st.write("**Missing / Low Alignment**")
+        st.progress(missing / max_count)
+        st.caption(f"{missing} skill(s)")
 
         st.dataframe(
             gap_report[[

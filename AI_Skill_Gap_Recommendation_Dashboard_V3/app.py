@@ -149,6 +149,56 @@ st.markdown(
         padding: 15px 17px;
         margin-bottom: 10px;
     }
+    .gap-chart {
+        width: 100%;
+        margin: 12px 0 20px 0;
+    }
+    .gap-row {
+        display: grid;
+        grid-template-columns: minmax(150px, 220px) 1fr 42px;
+        gap: 12px;
+        align-items: center;
+        margin: 10px 0;
+    }
+    .gap-label {
+        font-size: .92rem;
+        font-weight: 650;
+    }
+    .gap-track {
+        height: 22px;
+        border-radius: 999px;
+        background: rgba(128,128,128,.14);
+        overflow: hidden;
+    }
+    .gap-fill {
+        height: 100%;
+        border-radius: 999px;
+        background: currentColor;
+        opacity: .72;
+    }
+    .gap-value {
+        text-align: right;
+        font-weight: 700;
+    }
+    @media (max-width: 900px) {
+        .block-container {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+        .hero {
+            padding: 18px 18px;
+        }
+        .hero h1 {
+            font-size: 1.55rem;
+        }
+        .gap-row {
+            grid-template-columns: 1fr;
+            gap: 5px;
+        }
+        .gap-value {
+            text-align: left;
+        }
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -524,19 +574,12 @@ st.markdown(
 
 st.markdown('<div class="step-title">1. Select Career Context</div>', unsafe_allow_html=True)
 
-col1, col2, col3 = st.columns([1.1, 1.1, 0.9])
-
-with col1:
-    domain = st.selectbox("Industry / IT Domain", list(DOMAIN_TO_TITLES.keys()))
-
-with col2:
-    job_title = st.selectbox("Job Title", DOMAIN_TO_TITLES[domain])
-
-with col3:
-    skill_level = st.selectbox(
-        "Skill Level",
-        ["Beginner", "Intermediate", "Advanced"],
-    )
+domain = st.selectbox("Industry / IT Domain", list(DOMAIN_TO_TITLES.keys()))
+job_title = st.selectbox("Job Title", DOMAIN_TO_TITLES[domain])
+skill_level = st.selectbox(
+    "Skill Level",
+    ["Beginner", "Intermediate", "Advanced"],
+)
 
 st.markdown('<div class="step-title">2. Agentic AI Search</div>', unsafe_allow_html=True)
 
@@ -563,9 +606,11 @@ if run:
     st.divider()
 
     st.markdown('<div class="step-title">3. AI Interpretation</div>', unsafe_allow_html=True)
-    a, b, c, d = st.columns(4)
+    a, b = st.columns(2)
     a.metric("IT Domain", resolved_domain)
     b.metric("Job Title", resolved_title)
+
+    c, d = st.columns(2)
     c.metric("Level", resolved_level)
     d.metric("Matched Job Records", len(rows))
 
@@ -600,11 +645,28 @@ if run:
         m2.metric("Partially Matched", partial)
         m3.metric("Missing / Low Alignment", missing)
 
-        chart_df = pd.DataFrame({
-            "Classification": ["Fully Matched", "Partially Matched", "Missing / Low Alignment"],
-            "Number of Skills": [fully, partial, missing],
-        }).set_index("Classification")
-        st.bar_chart(chart_df)
+        # Pure HTML/CSS chart (does not depend on Altair).
+        # This is more robust on Streamlit Cloud / newer Python runtimes.
+        max_count = max(fully, partial, missing, 1)
+        chart_items = [
+            ("Fully Matched", fully),
+            ("Partially Matched", partial),
+            ("Missing / Low Alignment", missing),
+        ]
+        chart_html = '<div class="gap-chart">'
+        for label, value in chart_items:
+            width = max(2, int((value / max_count) * 100)) if value > 0 else 0
+            chart_html += f"""
+            <div class="gap-row">
+                <div class="gap-label">{label}</div>
+                <div class="gap-track">
+                    <div class="gap-fill" style="width:{width}%"></div>
+                </div>
+                <div class="gap-value">{value}</div>
+            </div>
+            """
+        chart_html += '</div>'
+        st.markdown(chart_html, unsafe_allow_html=True)
 
         st.dataframe(
             gap_report[[
